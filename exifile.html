@@ -32,21 +32,19 @@ javascript:
 <!-- Exifile decoded modified 10.41am 2016/02/19-->
 javascript:
 (function(e){
-  var abcd = document.querySelectorAll('[src=e]');
-  console.log('abcd is'+abcd);
-  if (abcd.length ===  1){
-    console.log('adding script element');
-    var s=document.createElement("script");
-    s.setAttribute("src",e);
-    document.body.appendChild(s);
-  }
-  else{
-    console.log('script already exists');
-    exifile();
-  }
-  function exifile(){
-
-  }
+    var abcd = document.querySelectorAll('[src=e]');
+    console.log('abcd is'+abcd);
+    if (abcd.length ===  1){
+      console.log('adding script element');
+      var s=document.createElement("script");
+      s.setAttribute("src",e);
+      document.body.appendChild(s);
+      initExifile();
+    }
+    else{
+      console.log('script already exists');
+      initExifile();
+    }
 })("https://secure27.webhostinghub.com/~suprad5/exifile/latest/exifile.js")
 
 <!-- Exifile encoded modified 10.41am 2016/02/19-->
@@ -60,3 +58,6 @@ javascript:void%20function(){(function(e){var%20t=document.querySelectorAll(%22[
 javascript:void%20function(){(function(e){var%20t=document.querySelectorAll(%22[src=e]%22);if(console.log(t),t.length%3C1){console.log(%22adding%20script%20element%22);var%20o=document.createElement(%22script%22);o.setAttribute(%22src%22,e),document.body.appendChild(o)}else%20console.log(%22script%20already%20exists%22)})(%22https://secure27.webhostinghub.com/~suprad5/exifile/latest/exifile.js%22)}();
 
 javascript:void%20function(){(function(e){var%20t=document.querySelectorAll(%22[src=e]%22);if(console.log(%22abcd%20is%22+t),1===t.length){console.log(%22adding%20script%20element%22);var%20o=document.createElement(%22script%22);o.setAttribute(%22src%22,e),document.body.appendChild(o)}else%20console.log(%22script%20already%20exists%22)})(%22https://secure27.webhostinghub.com/~suprad5/exifile/latest/exifile.js%22)}();
+
+<!-- 11.48am with window.exifile() -->
+javascript:void%20function(){(function(e){var%20i=document.querySelectorAll(%22[src=e]%22);if(console.log(%22abcd%20is%22+i),1===i.length){console.log(%22adding%20script%20element%22);var%20t=document.createElement(%22script%22);t.setAttribute(%22src%22,e),document.body.appendChild(t),window.exifile()}else%20console.log(%22script%20already%20exists%22),window.exifile()})(%22https://secure27.webhostinghub.com/~suprad5/exifile/latest/exifile.js%22)}();
