@@ -32,19 +32,9 @@ javascript:
 <!-- Exifile decoded modified 10.41am 2016/02/19-->
 javascript:
 (function(e){
-    var abcd = document.querySelectorAll('[src=e]');
-    console.log('abcd is'+abcd);
-    if (abcd.length ===  1){
-      console.log('adding script element');
-      var s=document.createElement("script");
-      s.setAttribute("src",e);
-      document.body.appendChild(s);
-      initExifile();
-    }
-    else{
-      console.log('script already exists');
-      initExifile();
-    }
+  var s=document.createElement("script");
+  s.setAttribute("src",e);
+  document.body.appendChild(s);
 })("https://secure27.webhostinghub.com/~suprad5/exifile/latest/exifile.js")
 
 <!-- Exifile encoded modified 10.41am 2016/02/19-->
@@ -61,3 +51,6 @@ javascript:void%20function(){(function(e){var%20t=document.querySelectorAll(%22[
 
 <!-- 11.48am with window.exifile() -->
 javascript:void%20function(){(function(e){var%20i=document.querySelectorAll(%22[src=e]%22);if(console.log(%22abcd%20is%22+i),1===i.length){console.log(%22adding%20script%20element%22);var%20t=document.createElement(%22script%22);t.setAttribute(%22src%22,e),document.body.appendChild(t),window.exifile()}else%20console.log(%22script%20already%20exists%22),window.exifile()})(%22https://secure27.webhostinghub.com/~suprad5/exifile/latest/exifile.js%22)}();
+
+<!-- 11.59am -->
+javascript:void%20function(){(function(e){var%20i=document.querySelectorAll(%22[src=e]%22);if(console.log(%22a%20is%22+i),1===i.length){console.log(%22adding%20script%20element%22);var%20t=document.createElement(%22script%22);t.setAttribute(%22src%22,e),document.body.appendChild(t),initExifile()}else%20console.log(%22script%20already%20exists%22),initExifile()})(%22https://secure27.webhostinghub.com/~suprad5/exifile/latest/exifile.js%22)}();

@@ -1,10 +1,9 @@
 // this is the way scribd marks its highlights
 // <span class="highlight highlight_highlight highlight_highlight:5191914 selected">is</span>
 
-function initExifile() {
-  (window.exifile = function(){
+exifile = (function(){
     /******* display downloading *********/
-    e = document.createElement("div");
+    var e = document.createElement("div");
     e.setAttribute('class','overlay-info');
     e.setAttribute('style',`padding: 20px;
                      margin: 0;
@@ -12,10 +11,11 @@ function initExifile() {
                      background-color:rgba(240,240,255,0.75);
                      font-size: 50px;
                      position: fixed;
-                     top: 20%;
+                     top: 0;
+                     padding: 20px;
                      right: auto;
                      left: auto;
-                     width: 80%;
+                     width: 100%;
                      text-align: center;`);
     e.innerHTML = "Downloading";
     document.body.appendChild(e);
@@ -64,36 +64,41 @@ function initExifile() {
     }
 
     function showButtons(){
+      console.log('In show buttons');
       nameStub = "Scribd.Highlights_"+(highlight.title.split(' ').join('.'));
       jsonFile = JSON.stringify(highlight);
 
-      disp = document.createElement("div");
-      disp.setAttribute('class','overlay-text');
-      disp.setAttribute('style',`padding: 40px;
-                          margin: 0;
-                          color: #000;
-                       background-color:rgba(255,255,255,1);
-                       font-size: 16.5px;
-                       position: fixed;
-                       top: 0;
-                       right: auto;
-                       left: auto;
-                       width: 90%;
-                       z-index: 9999`);
-      document.body.appendChild(disp);
-
-      dispTitle = document.createElement("h2");
-      dispTitle.innerHTML = highlight.title;
-      disp.appendChild(dispTitle);
-
+      overlay = document.createElement("div");
+      overlay.setAttribute('class','overlay-text');
+      overlay.setAttribute('style',`padding: 40px;
+                      margin: 0;
+                      color: #000;
+                      background-color:rgba(255,255,255,1);
+                      position: fixed;
+                      top: 0;
+                      right: auto;
+                      left: auto;
+                      width: 100%;
+                      z-index: 9999`);
+      //remove old div
       e.innerHTML = "Done Loading Highlights";
       document.body.removeChild(e);
+      //add new ovelay div
+      document.body.appendChild(overlay);
+
+      overlayTitle = document.createElement("h2");
+      overlayTitle.innerHTML = highlight.title;
+      overlay.appendChild(overlayTitle);
 
       jsonButton = document.createElement("span");
+      jsonButton.setAttribute('style',`padding: 5rem;
+                      margin: 5rem;`);
       jsonButton.innerHTML = `<button onclick="download((nameStub+'.json'),jsonFile)">Download JSON File</button>`;
-      disp.appendChild(jsonButton);
-      textFile = '';
+      overlay.appendChild(jsonButton);
+
+
       //create text filename
+      textFile = '';
       for (keys in highlight){
         if (Array.isArray(highlight[keys])){
           //console.log(highlight[keys]);
@@ -102,7 +107,6 @@ function initExifile() {
           for (var i=0; i<item.length; i++){
             textFile+= item[i].text + '\n';
             textFile+= "LOCATION: "+ item[i].location+'\n\n';
-
           }
           //console.log('this is an array');
         } else {
@@ -110,23 +114,22 @@ function initExifile() {
         }
       }
 
-      //console.log(textFile);
       textButton = document.createElement("span");
       textButton.innerHTML = `<button onclick="download((nameStub+'.txt'),textFile)">Download Text File</button>`;
-      disp.appendChild(textButton);
+      overlay.appendChild(textButton);
 
       closeButton = document.createElement("div");
       closeButton.innerHTML='<button onclick="closeAll()">Close All</button>';
-      disp.appendChild(closeButton);
+      overlay.appendChild(closeButton);
 
       //document.body.removeChild(disp);
     }
 
-    function closeAll(){
-      document.body.removeChild(disp);
-    }
+    closeAll = function(){
+      document.body.removeChild(overlay);
+    };
 
-    function download(filename, text) {
+    download = function(filename, text) {
       var element = document.createElement('a');
       element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
       element.setAttribute('download', filename);
@@ -135,7 +138,7 @@ function initExifile() {
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
-    }
+    };
 
     function scrapeHighlights( itemHandler){
       // get all highlight elements from the document chunk
@@ -176,4 +179,4 @@ function initExifile() {
       }
     }
   })();
-}
+
