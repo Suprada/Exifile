@@ -8,7 +8,7 @@ exifile = (function(){
     e.setAttribute('style',`padding: 20px;
                      margin: 0;
                      color: #000;
-                     background-color:rgba(240,240,255,0.75);
+                     background-color:rgba(240,240,255,0.9);
                      font-size: 50px;
                      position: fixed;
                      top: 0;
@@ -88,6 +88,7 @@ exifile = (function(){
 
       overlayTitle = document.createElement("h2");
       overlayTitle.innerHTML = highlight.title;
+      overlayTitle.style.padding-bottom = '30px';
       overlay.appendChild(overlayTitle);
 
       jsonButton = document.createElement("span");
@@ -119,9 +120,12 @@ exifile = (function(){
       overlay.appendChild(textButton);
 
       closeButton = document.createElement("div");
-      closeButton.innerHTML='<button onclick="closeAll()">Close All</button>';
+      closeButton.seAttribute("style",`position: fixed;
+                          top: 10px;
+                          right: 10px;
+                          padding: 10px;`)
+      closeButton.innerHTML='<button onclick="closeAll()" style="color: #000;background-color:  #fff;>X</button>';
       overlay.appendChild(closeButton);
-
       //document.body.removeChild(disp);
     }
 
