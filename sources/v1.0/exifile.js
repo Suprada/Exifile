@@ -63,38 +63,8 @@ exifile = (function(){
       /****** Initialize the highlights object ********/
       var highlight = {};
       highlight.title = document.title;
+      highlight.authors = document.getElementsByClassName('share_pinterest_btn')[0].getAttribute('data-authors');
       highlight.isbn = document.querySelector('meta[property="books:isbn"]').getAttribute('content');
-      // expand overflow menu
-      document.getElementsByClassName('icon-ic_overflowmenu')[0].parentElement.click();
-      // click on "About Book"
-      document.getElementsByClassName('icon-ic_abouttitle')[0].parentElement.click();
-      // get all authors
-      var arrAuthors = document.querySelectorAll('[itemprop="author"] a');
-      var authors = [];
-      arrAuthors.forEach(function(item){
-        authors.push(item.innerText);
-        // return item.innerHTML;
-      })
-      highlight.authors = authors.join(', ');
-      // to get authors
-      //document.getElementsByClassName('icon-ic_abouttitle');
-
-      //highlight.authors = document.getElementsByClassName('share_pinterest_btn')[0].getAttribute('data-authors');
-      
-      // expand overflow menu
-      document.getElementsByClassName('icon-ic_overflowmenu')[0].parentElement.click();
-      // click on Notes and bookmarks
-      document.getElementsByClassName('icon-ic_notebook')[0].parentElement.click();
-      //get all annotattions
-      var annotations = document.getElementsByClassName('annotation');
-      
-      annotations.forEach(function(item){
-        // currently there is no way to associate which note is for which highlight
-      })
-
-
-
-
       highlight.highlights = [];
       highlight.quotes = {};
 
