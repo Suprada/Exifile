@@ -16,6 +16,52 @@ exifile = (function(){
         homepage: "http://www.oddumbrella.com/exifile",
         license: "MIT",
     }
+
+    function isVerticalScrollingEnabled() {
+      var query = window.location.search;
+      var param = query.split('mode=')[1];
+      if (param === 'standard') {
+        return true;
+      }
+      return false;
+    }
+
+    function enableVerticalScrolling() {
+      var query = window.location.search;
+      window.location.href = window.location.origin + window.location.pathname + '?mode=standard';
+    }
+
+    function getBookMeta(obj){
+      console.log('getting book meta');
+      obj.title = document.title;
+      obj.isbn = document.querySelector('meta[property="books:isbn"]').getAttribute('content');
+      /******* get authors info *******/
+      // expand overflow menu
+      document.getElementsByClassName('icon-ic_overflowmenu')[0].parentElement.click();
+      // click on "About Book"
+      document.getElementsByClassName('icon-ic_abouttitle')[0].parentElement.click();
+      // get all authors
+      var arrAuthors = document.querySelectorAll('[itemprop="author"] a');
+      var authors = [];
+      arrAuthors.forEach(function(item){
+          authors.push(item.innerText);
+      })
+      obj.authors = authors.join(', ');
+      return obj;
+    }
+    
+    function goToCoverPage(){
+      /******* Go to Table of Contents and go to the first page of the book *********/
+      console.log('going to cover page');
+      var tocIcon = document.getElementsByClassName('icon-ic_toc_list');
+      tocIcon[0].click();
+      var tocParentDiv = tocIcon[0].parentElement.parentElement;
+      var tocList = tocParentDiv.querySelector('ul');
+      // go to the first item in the menu
+      tocList.children[0].click();
+    }
+
+
     /******* display downloading *********/
     var e = document.createElement("div");
     e.setAttribute('class','overlay-info');
@@ -41,55 +87,70 @@ exifile = (function(){
     } else if ((hostName === "www.scribd.com") && ( readPath === 'read')){
       e.innerHTML = "<h1>Downloading</h1>";
 
-      /******* Change the display to vertical first so it can chunk *********/
-      // var readingModeElemArr = document.querySelectorAll('[data-action="change_reading_mode"]');
-      // var readingModeChanged = 0;
-      // var readingModeHandle = null;
-      // for( var index=0; index < readingModeElemArr.length; index++){
-      //   var elem = readingModeElemArr[index];
-      //   var elemClass = elem.getAttribute('class')
-      //   var elemTrack = elem.getAttribute('data-track');
-      //   //if data track is vertical and not selected
-      //   if (elemTrack === 'vertical'){
-      //     if (elemClass.indexOf('selected') === -1){
-      //       //click on it
-      //       elem.click();
-      //       //click save button
-      //       document.getElementsByClassName('flat_btn outline_btn apply_changes')[0].click();
-      //     }
-      //   }
-      // }
+      var t = isVerticalScrollingEnabled();
+      if (!t){
+      e.innerHTML = "<h3>Vertical scrolling is not enabled.</h3><h3>Exifile will enable vertical scrolling.</h3><h3>Please click on exifile bookmarklet again after page reloads</h3>"; 
+      console.log("vertical scrolling is not enabled. Exifile will enable vertical scrolling. Please click on exifile bookmarklet again after page reloads");
+        
+        alert("Vertical scrolling is not enabled.<br /> Exifile will enable vertical scrolling. <br /> Please click Exifile after page reload.");
+        enableVerticalScrolling();
+      }
+
+      // /******* Enable vertical scrolling is true. Proceed *********/
+      goToCoverPage();
+
+      /******* Scroll through the book *********/
+      // Each chapter loads individually. I need to click "Next or Prev" until all chapters are done.
+      /****** Initialize the highlights object ********/
+      var highlights = {};
+      highlights = getBookMeta(highlights);
 
 
+      var goNext = true;
+      while (goNext) {
+        var buttonsContainer = document.getElementsByClassName("buttons_container");
+        buttonsContainer[0].scrollIntoView();
+        console.log('scrolled into view');
+        // go from page to page doing stuff
+        console.log('before highlights', highlights);
+        var scrapedHighlights = scrapeHighlights();
+        console.log('new ones', scrapedHighlights);
+        highlights = Object.assign(highlights, scrapedHighlights);
+        console.log('after highlights', highlights);
+
+        // check if go next is still true
+        var nextButton = getElementsByText('Next Chapter', 'span');
+        console.log(nextButton);
+        if (nextButton.length < 1) {
+          goNext = false;
+        } else {
+          console.log('clicking next button');
+          setTimeout(nextButton[0].click(), 6000);
+        }
+      }
+      console.log(highlights);
+      alert('done with all scraping');
+       
+      // goToAnnotations();
+      // var annotations = scrapeAnnotations();
+      // console.log(annotations);
+      
       function clickDisplaySetting(){
-          // Find the display setting icon and click it
-          var displaySettingsIcons = document.getElementsByClassName('icon-ic_displaysettings');
-          // find which one has a parent which is an anchor link. the other one has a li parent.
-          var displaySetting; 
-          for (var entry of displaySettingsIcons){
-            if (entry.parentElement.nodeName === 'A') 
-              displaySetting = entry;
-          }
-          displaySetting.parentElement.click();
+        console.log('click display settings');
+        // Find the display setting icon and click it
+        var displaySettingsIcons = document.getElementsByClassName('icon-ic_displaysettings');
+        // find which one has a parent which is an anchor link. the other one has a li parent.
+        var displaySetting; 
+        for (var entry of displaySettingsIcons){
+          if (entry.parentElement.nodeName === 'A') 
+            displaySetting = entry;
+        }
+        displaySetting.parentElement.click();
       }
 
-      function enableVerticalScrolling(){
-        console.log(document.querySelector('[data-tooltip="Vertical scrolling"]'));
-          // enable verticalScrolling
-          document.querySelector('[data-tooltip="Vertical scrolling"]').click();
-      }
+      
 
-      function goToCoverPage(){
-          /******* Go to Table of Contents and go to the first page of the book *********/
-          // wait a bit before doing this.
-          console.log('going to cover page');
-          var tocIcon = document.getElementsByClassName('icon-ic_toc_list');
-          tocIcon[0].click();
-          var tocParentDiv = tocIcon[0].parentElement.parentElement;
-          var tocList = tocParentDiv.querySelector('ul');
-          // go to the first item in the menu
-          tocList.children[0].click();
-      }
+      
 
       function getElementsByText(str, tag = 'a') {
           return Array.prototype.slice
@@ -97,72 +158,91 @@ exifile = (function(){
               .filter(el => el.textContent.trim() === str.trim());
       }
 
-      /******* Enable vertical scrolling first so it can chunk *********/
-      clickDisplaySetting();
-      enableVerticalScrolling();
-     
-      /******* Go to cover page*********/
-      this.setTimeout(function(){
-         goToCoverPage();
-      }, 8000);
+      
 
-      /******* Scroll through the book *********/
-      // Each chapter loads individually. I need to click "Next or Prev" until all chapters are done.
-      var goNext = true;
-      while (goNext) {
-        // go from page to page doing stuff
+      function goToAnnotations(){
+        console.log('going to annotations');
+        var menuButton = document.getElementsByClassName("icon-ic_overflowmenu");
+        menuButton[0].click();
+        var notesButton = getElementsByText("Notes & Bookmarks", 'span');
+        notesButton[0].click();
+      }
 
-        // check if go next is still true
-        var nextButton = getElementsByText("Next Chapter", "span");
-        console.log(nextButton);
-        if (nextButton.length < 1){
-          goNext = false;
-        } else {
-          console.log('clicking next button');
-          setTimeout(nextButton[0].click(), 6000);
+      function scrapeAnnotations(){
+        var highlights = [];
+        var annotations = document.getElementsByClassName("annotation");
+        for (var annotation of annotations){
+          var type = annotation.getElementsByClassName('annotation_type')[0].innerHTML || "";
+          var page = annotation.getElementsByClassName('page_num')[0].innerHTML || "";
+          var text = annotation.getElementsByClassName('excerpt')[0].innerHTML || "";
+          console.log(type, page, text);
+          var payload = {
+            "type": type,
+            "location": page,
+            "text": text
+          };
+          highlights.push(payload);
         }
+        return highlights;
+      }
+
+      function scrapeHighlights(){
+        console.log('in scraping highlights');
+        var highs = {};
+        var highlightEls = document.getElementsByClassName("highlight");
+        console.log(highlightEls);
+        for (var el of highlightEls){
+          var id = el.className.split(":")[1];
+          if (highs[id]){
+            var inHtml = el.innerHTML;
+            highs[id].text.push(el.innerHTML);
+          } else {
+            highs[id].id = id;
+            highs[id].text = [el.innerHTML];
+          }
+          console.log(id, el.innerHTML);
+        }
+        return highs;
       }
 
 
+     
 
+     
 
+      //     /******* Scroll through the book *********/
+      //     // Each chapter loads individually. I need to click "Next or Prev" until all chapters are done.
+      //     var goNext = true;
+      //     while (goNext) {
+      //         var buttonsContainer = document.getElementsByClassName("buttons_container");
+      //         buttonsContainer[0].scrollIntoView();
+      //         console.log('scrolled into view');
+      //         // go from page to page doing stuff
+      //         console.log('before highlights', highlights);
+      //         var scrapedHighlights = scrapeHighlights();
+      //         console.log('new ones', scrapedHighlights);
+      //         // alert('higlights');
 
+      //         // highlights = Object.assign(highlights, scrapedHighlights);
+      //         // console.log('after highlights', highlights);
+      //         // alert('just scraped highlights in this page if any');
 
-    //   /****** Initialize the highlights object ********/
-    //   var highlight = {};
-    //   highlight.title = document.title;
-    //   highlight.isbn = document.querySelector('meta[property="books:isbn"]').getAttribute('content');
-    //   // expand overflow menu
-    //   document.getElementsByClassName('icon-ic_overflowmenu')[0].parentElement.click();
-    //   // click on "About Book"
-    //   document.getElementsByClassName('icon-ic_abouttitle')[0].parentElement.click();
-    //   // get all authors
-    //   var arrAuthors = document.querySelectorAll('[itemprop="author"] a');
-    //   var authors = [];
-    //   arrAuthors.forEach(function(item){
-    //     authors.push(item.innerText);
-    //     // return item.innerHTML;
-    //   })
-    //   highlight.authors = authors.join(', ');
-    //   // to get authors
-    //   //document.getElementsByClassName('icon-ic_abouttitle');
+      //         // check if go next is still true
+      //         var nextButton = getElementsByText('Next Chapter', 'span');
+      //         console.log(nextButton);
+      //         if (nextButton.length < 1) {
+      //             goNext = false;
+      //             alert('No more nexts');
+      //         } else {
+      //             console.log('clicking next button');
+      //             setTimeout(nextButton[0].click(), 6000);
+      //         }
+      //     }
+      //     console.log(highlights);
+      //     alert('done with all scraping');
+      // // }, 8000);
 
-    //   //highlight.authors = document.getElementsByClassName('share_pinterest_btn')[0].getAttribute('data-authors');
       
-    //   // expand overflow menu
-    //   document.getElementsByClassName('icon-ic_overflowmenu')[0].parentElement.click();
-    //   // click on Notes and bookmarks
-    //   document.getElementsByClassName('icon-ic_notebook')[0].parentElement.click();
-    //   //get all annotattions
-    //   var annotations = document.getElementsByClassName('annotation');
-      
-    //   annotations.forEach(function(item){
-    //     // currently there is no way to associate which note is for which highlight
-    //   })
-
-
-
-
     //   highlight.highlights = [];
     //   highlight.quotes = {};
 
@@ -338,6 +418,6 @@ exifile = (function(){
     //       }
     //     }
     //   }
-    // }
+    }
   })();
 
