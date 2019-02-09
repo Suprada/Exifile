@@ -62,44 +62,37 @@ exifile = (function() {
       e.innerHTML = "<h1>Please start reading book</h1>";
       addCloseButton(e);
     } else if (hostName === "www.scribd.com" && readPath === "read") {
-      e.innerHTML = "<h1>Downloading</h1>";
+      e.innerHTML =
+        "<h1>Downloading...</h1><h3>Takes about 5mins or so. Time for a cup of coffee...</h3>";
     }
   }
 
   async function startScrapingPage() {
     highlights = getBookMeta(highlights);
+    goToCoverPage();
     highlights.annotations = await getNotesAndBookmarks();
     // console.log("notes are", highlights.annotations);
     if (highlights.annotations) {
       const lastPage = getLastPage(highlights.annotations);
-      let p2 = new Promise((resolve, reject) => {
-        goToCoverPage();
-        delayTimer(() => {
-          resolve();
-        }, 2000);
+      let t = await timeout(2000);
+      let bookHighlights = await readBook(lastPage);
+      const keys = Object.keys(bookHighlights);
+      const updated = keys.map(item => {
+        const { id, text } = bookHighlights[item];
+        const t = {};
+        t.id = id;
+        t.text = text.join(" ");
+        return t;
       });
-      p2.then(() => {
-        bookHighlights = readBook(lastPage);
-        bookHighlights.then(highs => {
-          const keys = Object.keys(highs);
-          const updated = keys.map(item => {
-            const { id, text } = highs[item];
-            const t = {};
-            t.id = id;
-            t.text = text.join(" ");
-            return t;
-          });
-          // reconcile highlights and bookHighlights
-          reconcileHighlights(highlights, updated);
-        });
-      });
+      // reconcile highlights and bookHighlights
+      reconcileHighlights(highlights, updated);
     } else {
       console.log("no annotations found");
     }
   }
 
   function reconcileHighlights(highlights, bookHighlights) {
-    console.log("highlights", highlights);
+    // console.log("highlights.annotations", highlights.annotations);
     const newAnnotations = highlights.annotations.reverse().map((item, ind) => {
       item.excerpt = bookHighlights[ind].text;
       return item;
@@ -109,14 +102,7 @@ exifile = (function() {
     showButtons(e, highlights);
   }
 
-  function delayTimer(f, n) {
-    return setTimeout(() => {
-      f();
-    }, n);
-  }
-
   function getBookMeta(obj) {
-    console.log("in getBookMeta", Scribd.current_doc);
     // TODO handle multiple author names
     const { title, author_name } = Scribd.current_doc;
     obj.isbn = document
@@ -124,59 +110,50 @@ exifile = (function() {
       .getAttribute("content");
     obj.title = title;
     obj.authors = [author_name];
-    console.log(obj.authors);
     return obj;
   }
 
   async function getNotesAndBookmarks() {
     // console.log('in getNotesAndAnnotations');
     let annotations = [];
-    return new Promise((resolve, reject) => {
-      let p1 = new Promise((res, rej) => {
-        document
-          .getElementsByClassName("icon-ic_overflowmenu")[0]
-          .parentElement.click(); // expand overflow menu
-        document
-          .getElementsByClassName("icon-ic_notebook")[0]
-          .parentElement.click(); // click on Notes & Bookmarks
-        delayTimer(() => {
-          res("");
-        }, 2000);
-      });
-      p1.then(() => {
-        // get all li elements with class 'annotation
-        // console.log('in scraping annotations');
-        const items = document.getElementsByClassName("annotation");
-        if (items.length > 0) {
-          for (let item of items) {
-            const location = item.getElementsByClassName("page_num")[0]
-              .innerHTML;
-            const type = item.getElementsByClassName("annotation_type")[0]
-              .innerHTML;
-            const time = item.getElementsByClassName("time")[0].innerHTML;
-            const excerpt = item.getElementsByClassName("excerpt")[0].innerHTML;
-            if (
-              excerpt &&
-              excerpt !== "" &&
-              excerpt !== "No preview available"
-            ) {
-              annotations.push({
-                location: location,
-                type: type,
-                time: time,
-                excerpt: excerpt
-              });
-            }
-          }
-          closeModal();
-          resolve(annotations);
-        } else {
-          closeModal();
-          console.log("no notes and bookmarks available in this book");
-          reject(null);
+    // click on notes and bookmarks
+    document
+      .getElementsByClassName("icon-ic_overflowmenu")[0]
+      .parentElement.click(); // expand overflow menu
+    document
+      .getElementsByClassName("icon-ic_notebook")[0]
+      .parentElement.click(); // click on Notes & Bookmarks
+    // add delay for modal to fully load
+    let t = await timeout(3000);
+    // scrape annotations from the highlights modal
+    const items = document.getElementsByClassName("annotation");
+    if (items.length > 0) {
+      for (let item of items) {
+        const location = item.getElementsByClassName("page_num")[0].innerHTML;
+        const type = item.getElementsByClassName("annotation_type")[0]
+          .innerHTML;
+        const time = item.getElementsByClassName("time")[0].innerHTML;
+        const excerpt = item.getElementsByClassName("excerpt")[0].innerHTML;
+        if (
+          excerpt &&
+          excerpt !== "" &&
+          excerpt !== "No preview available" &&
+          type === "highlight"
+        ) {
+          annotations.push({
+            location: location,
+            type: type,
+            time: time,
+            excerpt: excerpt
+          });
         }
-      });
-    });
+      }
+      closeModal();
+      return annotations;
+    }
+    closeModal();
+    console.log("no notes and bookmarks available in this book");
+    return null;
   }
 
   const closeModal = () => {
@@ -191,13 +168,18 @@ exifile = (function() {
   };
 
   function getLastPage(annotations) {
-    // console.log("in getLastPage");
-    let pageNums = [];
-    pageNums = annotations.map(item => item.location.split(" ")[1]);
-    return pageNums.reduce((a, b) => (a >= b ? a : b), 0);
+    // console.log(
+    //   "in getLastPage. Not real last page but last page for rendering"
+    // );
+    const lastPage = document
+      .getElementById("footer")
+      .innerText.split(" ")[3]
+      .split(",")[0];
+
+    return Number(lastPage);
   }
 
-  const goToCoverPage = () => {
+  function goToCoverPage() {
     // console.log("in goToCoverPage");
     /******* Go to Table of Contents and go to the first page of the book *********/
     const tocIcon = document.getElementsByClassName("icon-ic_toc_list");
@@ -206,7 +188,75 @@ exifile = (function() {
     const tocList = tocParentDiv.querySelector("ul");
     // go to the first item in the menu
     tocList.children[0].click();
-  };
+  }
+
+  async function readBook(lastPage) {
+    // console.log("in readbook. lastPage is", lastPage);
+    let currentPage = 1;
+    let highlightsObj = {};
+    let cntr = 1;
+    let nb1 = [];
+    let nb2 = [];
+    let t = {};
+    let quitLoop = false;
+
+    // scroll through pages and scrape each page.
+    while (
+      !isNaN(currentPage) &&
+      currentPage < lastPage &&
+      quitLoop === false
+    ) {
+      cntr++;
+      t = scrapeCurrentPage();
+      currentPage = t.currentPage;
+      console.log(`scraping ${cntr}. In ${currentPage}. Till ${lastPage}`);
+      highlightsObj = Object.assign(highlightsObj, t.scrapedHighlights);
+      nb1 = document.getElementsByClassName("only_next_btn");
+      nb2 = document.getElementsByClassName("load_next_btn");
+      if (nb1 && nb1.length > 0) {
+        nb1[0].getElementsByTagName("button")[0].click();
+        let t1 = await timeout(2500);
+      } else if (nb2 && nb2.length > 0) {
+        nb2[0].click();
+        let t2 = await timeout(2500);
+      } else {
+        console.log("quitting loop");
+        quitLoop = true;
+      }
+    }
+    return highlightsObj;
+  }
+
+  function scrapeCurrentPage() {
+    scrollDownPage();
+    const scrapedHighlights = scrapeHighlights();
+    const currentPage = Number(
+      document.getElementById("footer").innerText.split(" ")[1]
+    );
+    const t = {
+      scrapedHighlights: scrapedHighlights,
+      currentPage: currentPage
+    };
+    return t;
+  }
+
+  function scrapeHighlights() {
+    // console.log('in scrapeHighlights');
+    let pageHighlights = {};
+    const elems = document.getElementsByClassName("highlight");
+    if (elems.length > 0) {
+      for (let el of elems) {
+        const id = el.className.split(":")[1];
+        if (pageHighlights[id]) {
+          pageHighlights[id].text.push(el.innerHTML);
+        } else {
+          pageHighlights[id] = { id: id, text: [el.innerHTML] };
+        }
+      }
+      return pageHighlights;
+    }
+    return null;
+  }
 
   function showButtons(e, highlights) {
     nameStub = "Exifile.Highlights_" + highlights.title.split(" ").join(".");
@@ -254,7 +304,7 @@ exifile = (function() {
 
     //create text filename and dom list
 
-    obj = createTextFile(highlights.annotations);
+    obj = createTextFile(highlights);
     textFile = obj.textFile;
     displayText = obj.displayText;
 
@@ -282,15 +332,19 @@ exifile = (function() {
     overlay.appendChild(footer);
   }
   function createTextFile(highlights) {
+    console.log("highlights", highlights);
+    const { title, authors, isbn, annotations } = highlights;
     textFile = "";
     displayText = "";
     //From quotes object
     displayText += '<ol class="all-quotes">';
+    textFile += "TITLE: " + title + "\n";
+    textFile += "AUTHORS: " + authors.join(", ") + "\n";
+    textFile += "ISBN: " + isbn + "\n";
 
-    highlights.forEach(item => {
+    annotations.forEach(item => {
       textFile += "\n";
       displayText += '<li class="quote-style">';
-      console.log(item);
       if (item.type === "highlight") {
         displayText += '<span class="text">' + item.excerpt + "</span>";
         textFile += item.excerpt + "\n";
@@ -308,71 +362,6 @@ exifile = (function() {
     return { textFile: textFile, displayText: displayText };
   }
 
-  function readBook(lastPage) {
-    // console.log("in readbook");
-    let currentPage = 0;
-    let highlightsObj = {};
-    let cntr = 1;
-    let nb1 = [];
-    let nb2 = [];
-    let t = {};
-
-    return new Promise((resolve, reject) => {
-      let i = setInterval(function() {
-        cntr++;
-        t = scrapeCurrentPage();
-        currentPage = t.currentPage;
-        highlightsObj = Object.assign(highlightsObj, t.scrapedHighlights);
-        nb1 = document.getElementsByClassName("only_next_btn");
-        nb2 = document.getElementsByClassName("load_next_btn");
-        if (nb1 && nb1.length > 0) {
-          nb1[0].getElementsByTagName("button")[0].click();
-        } else if (nb2 && nb2.length > 0) {
-          nb2[0].click();
-        } else {
-          clearInterval(i);
-          resolve(highlightsObj);
-        }
-        if (currentPage > lastPage) {
-          clearInterval(i);
-          resolve(highlightsObj);
-        }
-      }, 2000);
-    });
-  }
-
-  function scrapeCurrentPage() {
-    console.log("scraping...");
-    scrollDownPage();
-    const scrapedHighlights = scrapeHighlights();
-    const currentPage = Number(
-      document.getElementById("footer").innerText.split(" ")[1]
-    );
-    const t = {
-      scrapedHighlights: scrapedHighlights,
-      currentPage: currentPage
-    };
-    return t;
-  }
-
-  function scrapeHighlights() {
-    // console.log('in scrapeHighlights');
-    let pageHighlights = {};
-    const elems = document.getElementsByClassName("highlight");
-    if (elems.length > 0) {
-      for (let el of elems) {
-        const id = el.className.split(":")[1];
-        if (pageHighlights[id]) {
-          pageHighlights[id].text.push(el.innerHTML);
-        } else {
-          pageHighlights[id] = { id: id, text: [el.innerHTML] };
-        }
-      }
-      return pageHighlights;
-    }
-    return null;
-  }
-
   function scrollDownPage() {
     // console.log("in scrollDownPage");
     var buttonsContainer = document.getElementsByClassName("buttons_container");
@@ -380,7 +369,7 @@ exifile = (function() {
   }
 
   download = function download(filename, text) {
-    console.log("in download");
+    // console.log("in download");
     var element = document.createElement("a");
     element.setAttribute(
       "href",
@@ -393,8 +382,20 @@ exifile = (function() {
     element.click();
     document.body.removeChild(element);
   };
+
+  // DOM helpers
   closeAll = function(elem) {
-    console.log("in closeAll");
+    // console.log("in closeAll");
     document.body.removeChild(elem);
   };
+
+  // helpers
+  async function delayTimer(f, n) {
+    await timeout(n);
+    return f();
+  }
+
+  function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 })();
