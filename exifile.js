@@ -23,6 +23,7 @@ exifile = (function() {
     license: "MIT"
   };
 
+  // TODO add analytics tracker
   const e = document.createElement("div");
   const hostName = location.hostname;
   const readPath = location.pathname.split("/")[1];
@@ -63,7 +64,7 @@ exifile = (function() {
       addCloseButton(e);
     } else if (hostName === "www.scribd.com" && readPath === "read") {
       e.innerHTML =
-        "<h1>Downloading...</h1><h3>Takes about 5mins or so. Time for a cup of coffee...</h3>";
+        "<h1>Exifiling...</h1><h3>Takes about 5 mins-ish. Time for a cup of coffee...</h3><p id='exifiling-status'>Starting Exifiling... </p>";
     }
   }
 
@@ -88,6 +89,8 @@ exifile = (function() {
       reconcileHighlights(highlights, updated);
     } else {
       console.log("no annotations found");
+      e.innerHTML = `<h1>Exifile</h1><h2>This book has no highlights.</h2>`;
+      addCloseButton(e);
     }
   }
 
@@ -99,7 +102,7 @@ exifile = (function() {
     });
     highlights.annotations = newAnnotations;
 
-    showButtons(e, highlights);
+    showHighlightsWithButtons(e, highlights);
   }
 
   function getBookMeta(obj) {
@@ -209,16 +212,17 @@ exifile = (function() {
       cntr++;
       t = scrapeCurrentPage();
       currentPage = t.currentPage;
-      console.log(`scraping ${cntr}. In ${currentPage}. Till ${lastPage}`);
+      const statusEl = document.getElementById("exifiling-status");
+      statusEl.innerHTML = `Loop ${cntr} (Page ${currentPage} of ${lastPage})`;
       highlightsObj = Object.assign(highlightsObj, t.scrapedHighlights);
       nb1 = document.getElementsByClassName("only_next_btn");
       nb2 = document.getElementsByClassName("load_next_btn");
       if (nb1 && nb1.length > 0) {
         nb1[0].getElementsByTagName("button")[0].click();
-        let t1 = await timeout(2500);
+        let t1 = await timeout(2000);
       } else if (nb2 && nb2.length > 0) {
         nb2[0].click();
-        let t2 = await timeout(2500);
+        let t2 = await timeout(2000);
       } else {
         console.log("quitting loop");
         quitLoop = true;
@@ -258,31 +262,42 @@ exifile = (function() {
     return null;
   }
 
-  function showButtons(e, highlights) {
-    nameStub = "Exifile.Highlights_" + highlights.title.split(" ").join(".");
-    jsonFile = JSON.stringify(highlights);
-
+  function showHighlightsWithButtons(e, highlights) {
     overlay = document.createElement("main");
     overlay.setAttribute("class", "overlay-results");
 
-    //remove old div
+    // remove old div
     e.innerHTML = "Done Loading Highlights";
     document.body.removeChild(e);
-    //add new ovelay div
+
+    // add new ovelay div
     document.body.appendChild(overlay);
 
-    //div for the titles
+    addOverlayHeader({ parentEl: overlay, highlights });
+
+    addFillButtonsHeader({
+      parentEl: overlay,
+      highlights
+    });
+
+    addCloseButton(overlay);
+
+    // show highlights
+    obj = createTextFile(highlights);
+    displayText = obj.displayText;
+    divText = document.createElement("div");
+    divText.setAttribute("class", "highlights-text");
+
+    divText.innerHTML = displayText;
+    overlay.appendChild(divText);
+    addFooter(overlay);
+  }
+
+  const addOverlayHeader = ({ parentEl }) => {
+    // div for the titles
     overlayHeaderDiv = document.createElement("header");
     overlayHeaderDiv.setAttribute("class", "header-style");
-    /*overlayHeaderDiv.setAttribute("style",`display: inline-block;
-                          width: 75%;`);*/
     overlay.appendChild(overlayHeaderDiv);
-
-    //div for the download buttons
-    overlayButtons = document.createElement("div");
-    overlayButtons.setAttribute("class", "buttons-header");
-
-    overlay.appendChild(overlayButtons);
 
     overlayTitle = document.createElement("h2");
     overlayTitle.innerHTML = highlights.title;
@@ -294,49 +309,72 @@ exifile = (function() {
 
     overlayISBN = document.createElement("h4");
     overlayISBN.innerHTML = "ISBN: " + highlights.isbn;
-    /*overlayISBN.style["padding-bottom"] = '20px';*/
     overlayHeaderDiv.appendChild(overlayISBN);
 
-    jsonButton = document.createElement("span");
-    jsonButton.innerHTML =
-      '<button class="button-style" onclick="download((nameStub+\'.json\'),jsonFile)">Download JSON</button>';
-    overlayButtons.appendChild(jsonButton);
+    return null;
+  };
 
-    //create text filename and dom list
+  const addFillButtonsHeader = ({ parentEl, highlights }) => {
+    overlayButtons = document.createElement("div");
+    overlayButtons.setAttribute("class", "buttons-header");
+    parentEl.appendChild(overlayButtons);
 
+    nameStub = "Exifile.Highlights_" + highlights.title.split(" ").join(".");
     obj = createTextFile(highlights);
     textFile = obj.textFile;
-    displayText = obj.displayText;
+    jsonFile = JSON.stringify(highlights);
 
-    textButton = document.createElement("span");
-    textButton.innerHTML =
-      '<button style="padding: 10px; margin: 10px;" onclick="download((nameStub+\'.txt\'),textFile)">Download Text</button>';
-    overlayButtons.appendChild(textButton);
+    addDownloadButton({
+      parentEl: overlayButtons,
+      stub: nameStub,
+      file: jsonFile,
+      type: "JSON"
+    });
+    addDownloadButton({
+      parentEl: overlayButtons,
+      stub: nameStub,
+      file: textFile,
+      type: "Text"
+    });
 
-    closeButton = document.createElement("div");
+    // TODO add subscribe here
+
+    return null;
+  };
+
+  const addDownloadButton = ({ parentEl, stub, file, type }) => {
+    downloadButton = document.createElement("button");
+    downloadButton.setAttribute("class", "download-button");
+    downloadButton.innerHTML = `Download ${type}`;
+    downloadButton.onclick = () => download(`${stub}.${type}`, file);
+    parentEl.appendChild(downloadButton);
+    return null;
+  };
+
+  const addCloseButton = parentEl => {
+    closeButton = document.createElement("button");
     closeButton.setAttribute("class", "close-button");
-    closeButton.innerHTML =
-      '<button onclick="closeAll(overlay)" style="color: #000;background-color:  #fff;"">X</button>';
+    closeButton.innerHTML = "X";
+    closeButton.onclick = () => closeAll(parentEl);
+    parentEl.appendChild(closeButton);
+    return null;
+  };
 
-    overlay.appendChild(closeButton);
-
-    divText = document.createElement("div");
-    divText.setAttribute("class", "highlights-text");
-
-    divText.innerHTML = displayText;
-    overlay.appendChild(divText);
+  const addFooter = parentEl => {
     footer = document.createElement("div");
     footer.setAttribute("class", "exifile-footer");
     footer.innerHTML =
-      "<p>Exifile by Suprada | Free your Scribd highlights</p>";
-    overlay.appendChild(footer);
-  }
+      "<p><a href='https://oddumbrella.com/exifile/Exifile' target='_blank' rel='noopener noreferrer'>Exifile</a> by Suprada | Free your Scribd highlights</p>";
+    parentEl.appendChild(footer);
+    return null;
+  };
+
   function createTextFile(highlights) {
-    console.log("highlights", highlights);
+    // console.log("highlights", highlights);
     const { title, authors, isbn, annotations } = highlights;
     textFile = "";
     displayText = "";
-    //From quotes object
+    // From quotes object
     displayText += '<ol class="all-quotes">';
     textFile += "TITLE: " + title + "\n";
     textFile += "AUTHORS: " + authors.join(", ") + "\n";
@@ -385,7 +423,7 @@ exifile = (function() {
 
   // DOM helpers
   closeAll = function(elem) {
-    // console.log("in closeAll");
+    console.log("in closeAll");
     document.body.removeChild(elem);
   };
 
