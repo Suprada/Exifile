@@ -1,0 +1,164 @@
+html{
+  box-sizing: border-box;
+}
+
+body{
+  font-family: 'Quattrocento Sans', sans-serif;
+}
+
+#wrapper{
+  width: 850px;
+  margin: 0px auto;
+  padding: 0px 20px 20px 20px;
+
+}
+
+h1, h2, h3, h4, h6{
+  font-family: 'Montserrat', sans-serif;
+}
+
+p, ol, li {
+  font-family: 'Quattrocento Sans';
+  font-size: 16px;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: 400;
+  line-height: 26px;
+}
+
+header{
+  width: inherit;
+  border-bottom: 1px solid #ddd;
+  margin: 0 0 10px 0;
+}
+
+a{
+  color: #555555;
+}
+.header-text{
+  display: inline-block;
+  vertical-align: middle;
+  padding: 5px;
+  margin: 0 auto;
+  text-align: center;
+  width: 100%;
+}
+h1{
+  font-size: 150%;
+  text-transform: uppercase;
+}
+
+h3{
+  text-align: center;
+}
+.logo{
+  display: inline-block;
+  max-width: 145px;
+  vertical-align: middle;
+  padding: 10px;
+  margin: 10px auto;
+}
+
+.two-column{
+  columns: 2;
+  -webkit-columns: 2;
+  -moz-columns: 2;
+  column-gap: 20px;
+  -webkit-column-gap: 20px;
+  -moz-column-gap: 20px;
+}
+
+.first-column{
+  column-span: 1;
+  -webkit-column-span: 1;
+  -moz-column-span: 1;
+  column-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  -moz-column-break-inside: avoid;
+  padding: 5px 10px;
+  margin: 10px;
+}
+.second-column{
+  column-span: 1;
+  -webkit-column-span: 1;
+  -moz-column-span: 1;
+  column-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  -moz-column-break-inside: avoid;
+  padding: 5px 10px;
+  margin: 10px;
+}
+
+.smallprint{
+  font-size: small;
+}
+
+#bookmarklet{
+  width: inherit;
+}
+#install-button{
+  max-width: 100%;
+  width: auto;
+  padding: 10px;
+}
+
+.screenshots{
+  text-align: center;
+}
+.screenshot-list{
+  list-style-type: none;
+}
+.howto-image{
+  max-width: 95%;
+  width: inherit;
+  padding: 10px;
+  margin: 10px;
+  height: auto;
+}
+
+footer{
+  border-top: 1px solid #ddd;
+  text-align: left;
+}
+
+.credits{
+  list-style-type: none;
+
+}
+.footer-text {
+  font-size: 60%;
+  font-family: 'Montserrat', sans-serif;
+  line-height: 18px;
+}
+
+@media screen and (max-width:800px){
+  #wrapper{
+    width: 100%;
+    margin: 0;
+  }
+}
+
+@media screen and (max-width:600px){
+  #wrapper{
+    width: 100%;
+    margin: 0px;
+    padding: 0px;
+  }
+
+  .two-column{
+    columns: 1;
+    -webkit-columns: 1;
+    -moz-columns: 1;
+    column-gap: 0px;
+    -webkit-column-gap: 0px;
+    -moz-column-gap: 0px;
+  }
+  .first-column{
+    display: block;
+  }
+  .second-column{
+    display: block;
+    margin: 10px;
+  }
+};
+

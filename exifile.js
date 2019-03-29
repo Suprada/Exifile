@@ -1,186 +1,439 @@
-// this is the way scribd marks its highlights
-// <span class="highlight highlight_highlight highlight_highlight:5191914 selected">is</span>
+// TODO failing when full screen
+// todo intermittent infinite loop
+// TODO modules howto
+// TODO clean up code
+/* Exifile v3.0 - Free your Scribd highlights from the cloud
+ * http://www.oddumbrella.com/exifile
+ * Copyright (c) 2016 Suprada Urval <suprada@suprada.com> (http://www.suprada.com)
+ * MIT Licensed*/
 
-exifile = (function(){
-    /******* display downloading *********/
-    var e = document.createElement("div");
-    e.setAttribute('class','overlay-info');
-    e.setAttribute('style',`padding: 20px;
-                     margin: 0;
-                     color: #000;
-                     background-color:rgba(240,240,255,0.9);
-                     font-size: 50px;
-                     position: fixed;
-                     top: 0;
-                     padding: 20px;
-                     right: auto;
-                     left: auto;
-                     width: 100%;
-                     text-align: center;`);
-    e.innerHTML = "Downloading";
+exifile = (function() {
+  const metadat = {
+    name: "exifile",
+    version: "2.0",
+    tagline: "Free your Scribd highlights from the cloud",
+    description:
+      "When you create highlights and notes when reading your Scribd books, there is no way to see them in one page or to download them. This bookmarklet helps you to excise and file those Scribd highlights.  It gives you a single clean page with all your notes and highlights which can be copies, and gives you the option to download it in plain text format or JSON format. The highlights and notes can also be downloaded in plain text or JSON format.",
+    keywords: ["scribd", "note", "highlight"],
+    author: "Suprada Urval <suprada@suprada.com> (http://www.suprada.com)",
+    bugs: {
+      email: "suprada@suprada.com"
+    },
+    homepage: "http://www.oddumbrella.com/exifile",
+    license: "MIT"
+  };
+
+  // TODO add analytics tracker
+  const e = document.createElement("div");
+  const hostName = location.hostname;
+  const readPath = location.pathname.split("/")[1];
+  let verticalScrolling = false;
+  let highlights = {};
+  let bookHighlights = {};
+  let anns = [];
+
+  initExifile();
+
+  function initExifile() {
+    makeOverlayAndSetMessage(e);
+    verticalScrolling =
+      document.getElementsByClassName("vertical_reader_container").length > 0;
+    if (verticalScrolling) {
+      startScrapingPage();
+    } else {
+      e.innerHTML =
+        "<h3>Vertical scrolling is not enabled.</h3><h3>Exifile will enable vertical scrolling.</h3><h3>Please click on exifile bookmarklet again after page reloads</h3>";
+      console.log(
+        "vertical scrolling is not enabled. Exifile will enable vertical scrolling. Please click on exifile bookmarklet again after page reloads"
+      );
+      // enableVerticalScrolling
+      window.location.href =
+        window.location.origin + window.location.pathname + "?mode=standard";
+    }
+  }
+
+  function makeOverlayAndSetMessage(e) {
+    // console.log("in makeOverlayAndSetMessage");
+    e.setAttribute("class", "overlay-info");
     document.body.appendChild(e);
+    if (hostName !== "www.scribd.com") {
+      e.innerHTML = "<h1>Login to your book at www.scribd.com to start.</h1>";
+      addCloseButton(e);
+    } else if (hostName === "www.scribd.com" && readPath !== "read") {
+      e.innerHTML = "<h1>Please start reading book</h1>";
+      addCloseButton(e);
+    } else if (hostName === "www.scribd.com" && readPath === "read") {
+      e.innerHTML =
+        "<h1>Exifiling...</h1><h3>Takes about 5 mins-ish. Time for a cup of coffee...</h3><p id='exifiling-status'>Starting Exifiling... </p>";
+    }
+  }
 
-    /******* Change the display to vertical first so it can chunk *********/
-    var readingModeElemArr = document.querySelectorAll('[data-action="change_reading_mode"]');
-    var readingModeChanged = 0;
-    var readingModeHandle = null;
-    for( var index=0; index < readingModeElemArr.length; index++){
-      var elem = readingModeElemArr[index];
-      var elemClass = elem.getAttribute('class')
-      var elemTrack = elem.getAttribute('data-track');
-      //if data track is vertical and not selected
-      if (elemTrack === 'vertical'){
-        if (elemClass.indexOf('selected') === -1){
-          //click on it
-          elem.click();
-          //click save button
-          document.getElementsByClassName('flat_btn outline_btn apply_changes')[0].click();
+  async function startScrapingPage() {
+    highlights = getBookMeta(highlights);
+    goToCoverPage();
+    highlights.annotations = await getNotesAndBookmarks();
+    // console.log("notes are", highlights.annotations);
+    if (highlights.annotations) {
+      const lastPage = getLastPage(highlights.annotations);
+      let t = await timeout(2000);
+      let bookHighlights = await readBook(lastPage);
+      const keys = Object.keys(bookHighlights);
+      const updated = keys.map(item => {
+        const { id, text } = bookHighlights[item];
+        const t = {};
+        t.id = id;
+        t.text = text.join(" ");
+        return t;
+      });
+      // reconcile highlights and bookHighlights
+      reconcileHighlights(highlights, updated);
+    } else {
+      console.log("no annotations found");
+      e.innerHTML = `<h1>Exifile</h1><h2>This book has no highlights.</h2>`;
+      addCloseButton(e);
+    }
+  }
+
+  function reconcileHighlights(highlights, bookHighlights) {
+    // console.log("highlights.annotations", highlights.annotations);
+    const newAnnotations = highlights.annotations.reverse().map((item, ind) => {
+      item.excerpt = bookHighlights[ind].text;
+      return item;
+    });
+    highlights.annotations = newAnnotations;
+
+    showHighlightsWithButtons(e, highlights);
+  }
+
+  function getBookMeta(obj) {
+    // TODO handle multiple author names
+    const { title, author_name } = Scribd.current_doc;
+    obj.isbn = document
+      .querySelector('meta[property="books:isbn"]')
+      .getAttribute("content");
+    obj.title = title;
+    obj.authors = [author_name];
+    return obj;
+  }
+
+  async function getNotesAndBookmarks() {
+    // console.log('in getNotesAndAnnotations');
+    let annotations = [];
+    // click on notes and bookmarks
+    document
+      .getElementsByClassName("icon-ic_overflowmenu")[0]
+      .parentElement.click(); // expand overflow menu
+    document
+      .getElementsByClassName("icon-ic_notebook")[0]
+      .parentElement.click(); // click on Notes & Bookmarks
+    // add delay for modal to fully load
+    let t = await timeout(3000);
+    // scrape annotations from the highlights modal
+    const items = document.getElementsByClassName("annotation");
+    if (items.length > 0) {
+      for (let item of items) {
+        const location = item.getElementsByClassName("page_num")[0].innerHTML;
+        const type = item.getElementsByClassName("annotation_type")[0]
+          .innerHTML;
+        const time = item.getElementsByClassName("time")[0].innerHTML;
+        const excerpt = item.getElementsByClassName("excerpt")[0].innerHTML;
+        if (
+          excerpt &&
+          excerpt !== "" &&
+          excerpt !== "No preview available" &&
+          type === "highlight"
+        ) {
+          annotations.push({
+            location: location,
+            type: type,
+            time: time,
+            excerpt: excerpt
+          });
         }
       }
+      closeModal();
+      return annotations;
     }
+    closeModal();
+    console.log("no notes and bookmarks available in this book");
+    return null;
+  }
 
-    /****** Initialize the highlights object ********/
-    var highlight = {};
-    highlight.title = document.title;
-    highlight.authors = document.getElementsByClassName('share_pinterest_btn')[0].getAttribute('data-authors');
-    highlight.isbn = document.querySelector('meta[property="books:isbn"]').getAttribute('content');
-    highlight.highlights = [];
+  const closeModal = () => {
+    // console.log("in close modal");
+    const closeBtn =
+      document.getElementsByClassName("icon-ic_close") &&
+      document.getElementsByClassName("icon-ic_close_small");
+    if (closeBtn.length > 0) {
+      ("in closing");
+      closeBtn[0].click();
+    }
+  };
 
-    /*******  Scrape the chunks for the highlights *********/
-    var bookSectionsList = document.getElementsByClassName("reader_columns")[1].children;
-    var numberOfChunks = bookSectionsList.length;
-    if (numberOfChunks){
-      var chunkNum = 0;
-      function go(){
-        bookSectionsList[chunkNum].scrollIntoView({block: "end", behavior: "smooth"});
-        scrapeHighlights(bookSectionsList[chunkNum]);
-        if (chunkNum++ < (numberOfChunks-1)){
-          setTimeout(go, 100);
-        } else {
-          showButtons();
-        }
+  function getLastPage(annotations) {
+    // console.log(
+    //   "in getLastPage. Not real last page but last page for rendering"
+    // );
+    const lastPage = document
+      .getElementById("footer")
+      .innerText.split(" ")[3]
+      .split(",")[0];
+
+    return Number(lastPage);
+  }
+
+  function goToCoverPage() {
+    // console.log("in goToCoverPage");
+    /******* Go to Table of Contents and go to the first page of the book *********/
+    const tocIcon = document.getElementsByClassName("icon-ic_toc_list");
+    tocIcon[0].click();
+    const tocParentDiv = tocIcon[0].parentElement.parentElement;
+    const tocList = tocParentDiv.querySelector("ul");
+    // go to the first item in the menu
+    tocList.children[0].click();
+  }
+
+  async function readBook(lastPage) {
+    // console.log("in readbook. lastPage is", lastPage);
+    let currentPage = 1;
+    let highlightsObj = {};
+    let cntr = 1;
+    let nb1 = [];
+    let nb2 = [];
+    let t = {};
+    let quitLoop = false;
+
+    // scroll through pages and scrape each page.
+    while (
+      !isNaN(currentPage) &&
+      currentPage < lastPage &&
+      quitLoop === false
+    ) {
+      cntr++;
+      t = scrapeCurrentPage();
+      currentPage = t.currentPage;
+      const statusEl = document.getElementById("exifiling-status");
+      statusEl.innerHTML = `Loop ${cntr} (Page ${currentPage} of ${lastPage})`;
+      highlightsObj = Object.assign(highlightsObj, t.scrapedHighlights);
+      nb1 = document.getElementsByClassName("only_next_btn");
+      nb2 = document.getElementsByClassName("load_next_btn");
+      if (nb1 && nb1.length > 0) {
+        nb1[0].getElementsByTagName("button")[0].click();
+        let t1 = await timeout(2000);
+      } else if (nb2 && nb2.length > 0) {
+        nb2[0].click();
+        let t2 = await timeout(2000);
+      } else {
+        console.log("quitting loop");
+        quitLoop = true;
       }
-      go();
     }
+    return highlightsObj;
+  }
 
-    function showButtons(){
-      console.log('In show buttons');
-      nameStub = "Scribd.Highlights_"+(highlight.title.split(' ').join('.'));
-      jsonFile = JSON.stringify(highlight);
-
-      overlay = document.createElement("div");
-      overlay.setAttribute('class','overlay-text');
-      overlay.setAttribute('style',`padding: 40px;
-                      margin: 0;
-                      color: #000;
-                      background-color:rgba(255,255,255,1);
-                      position: fixed;
-                      top: 0;
-                      right: auto;
-                      left: auto;
-                      width: 100%;
-                      z-index: 9999`);
-      //remove old div
-      e.innerHTML = "Done Loading Highlights";
-      document.body.removeChild(e);
-      //add new ovelay div
-      document.body.appendChild(overlay);
-
-      overlayTitle = document.createElement("h2");
-      overlayTitle.innerHTML = highlight.title;
-      overlayTitle.style.padding-bottom = '30px';
-      overlay.appendChild(overlayTitle);
-
-      jsonButton = document.createElement("span");
-      jsonButton.setAttribute('style',`padding: 5rem;
-                      margin: 5rem;`);
-      jsonButton.innerHTML = `<button onclick="download((nameStub+'.json'),jsonFile)">Download JSON File</button>`;
-      overlay.appendChild(jsonButton);
-
-
-      //create text filename
-      textFile = '';
-      for (keys in highlight){
-        if (Array.isArray(highlight[keys])){
-          //console.log(highlight[keys]);
-          textFile += '\n';
-          var item = highlight[keys];
-          for (var i=0; i<item.length; i++){
-            textFile+= item[i].text + '\n';
-            textFile+= "LOCATION: "+ item[i].location+'\n\n';
-          }
-          //console.log('this is an array');
-        } else {
-          textFile += highlight[keys] + '\n';
-        }
-      }
-
-      textButton = document.createElement("span");
-      textButton.innerHTML = `<button onclick="download((nameStub+'.txt'),textFile)">Download Text File</button>`;
-      overlay.appendChild(textButton);
-
-      closeButton = document.createElement("div");
-      closeButton.seAttribute("style",`position: fixed;
-                          top: 10px;
-                          right: 10px;
-                          padding: 10px;`)
-      closeButton.innerHTML='<button onclick="closeAll()" style="color: #000;background-color:  #fff;>X</button>';
-      overlay.appendChild(closeButton);
-      //document.body.removeChild(disp);
-    }
-
-    closeAll = function(){
-      document.body.removeChild(overlay);
+  function scrapeCurrentPage() {
+    scrollDownPage();
+    const scrapedHighlights = scrapeHighlights();
+    const currentPage = Number(
+      document.getElementById("footer").innerText.split(" ")[1]
+    );
+    const t = {
+      scrapedHighlights: scrapedHighlights,
+      currentPage: currentPage
     };
+    return t;
+  }
 
-    download = function(filename, text) {
-      var element = document.createElement('a');
-      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-      element.setAttribute('download', filename);
-
-      element.style.display = 'none';
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-    };
-
-    function scrapeHighlights( itemHandler){
-      // get all highlight elements from the document chunk
-      var x = itemHandler.getElementsByClassName('highlight highlight_highlight highlight_highlight');
-      var pageInfo = document.getElementsByClassName('pages_info')[1];
-      var pageNum = pageInfo.innerHTML;
-      for( var i=0; i< x.length; i++){
-        //List of all classes by classname
-        var nodeClassList = x[i].getAttribute('class');
-        //the highlight id associated with this element
-        var highlightId = nodeClassList.split(':')[1];
-        //the innerHTML with this element
-        var nodeText = x[i].innerHTML;
-        //if this id exists, append to the text
-        var len = highlight.highlights.length;
-        //console.log(len);
-        if (len > 0){
-          if (highlightId === highlight.highlights[len-1].id){
-            highlight.highlights[len-1].text += nodeText;
-          }
-          else{
-            highlightElem = {
-            "id": highlightId,
-            "text": nodeText,
-            "location": pageNum.split(' ')[1]
-            }
-            highlight.highlights.push(highlightElem);
-          }
-        }
-        else{
-          highlightElem = {
-            "id": highlightId,
-            "text": nodeText,
-            "location": pageNum.split(' ')[1]
-          }
-          highlight.highlights.push(highlightElem);
+  function scrapeHighlights() {
+    // console.log('in scrapeHighlights');
+    let pageHighlights = {};
+    const elems = document.getElementsByClassName("highlight");
+    if (elems.length > 0) {
+      for (let el of elems) {
+        const id = el.className.split(":")[1];
+        if (pageHighlights[id]) {
+          pageHighlights[id].text.push(el.innerHTML);
+        } else {
+          pageHighlights[id] = { id: id, text: [el.innerHTML] };
         }
       }
+      return pageHighlights;
     }
-  })();
+    return null;
+  }
 
+  function showHighlightsWithButtons(e, highlights) {
+    overlay = document.createElement("main");
+    overlay.setAttribute("class", "overlay-results");
+
+    // remove old div
+    e.innerHTML = "Done Loading Highlights";
+    document.body.removeChild(e);
+
+    // add new ovelay div
+    document.body.appendChild(overlay);
+
+    addOverlayHeader({ parentEl: overlay, highlights });
+
+    addFillButtonsHeader({
+      parentEl: overlay,
+      highlights
+    });
+
+    addCloseButton(overlay);
+
+    // show highlights
+    obj = createTextFile(highlights);
+    displayText = obj.displayText;
+    divText = document.createElement("div");
+    divText.setAttribute("class", "highlights-text");
+
+    divText.innerHTML = displayText;
+    overlay.appendChild(divText);
+    addFooter(overlay);
+  }
+
+  const addOverlayHeader = ({ parentEl }) => {
+    // div for the titles
+    overlayHeaderDiv = document.createElement("header");
+    overlayHeaderDiv.setAttribute("class", "header-style");
+    overlay.appendChild(overlayHeaderDiv);
+
+    overlayTitle = document.createElement("h2");
+    overlayTitle.innerHTML = highlights.title;
+    overlayHeaderDiv.appendChild(overlayTitle);
+
+    overlayAuthor = document.createElement("h4");
+    overlayAuthor.innerHTML = highlights.authors;
+    overlayHeaderDiv.appendChild(overlayAuthor);
+
+    overlayISBN = document.createElement("h4");
+    overlayISBN.innerHTML = "ISBN: " + highlights.isbn;
+    overlayHeaderDiv.appendChild(overlayISBN);
+
+    return null;
+  };
+
+  const addFillButtonsHeader = ({ parentEl, highlights }) => {
+    overlayButtons = document.createElement("div");
+    overlayButtons.setAttribute("class", "buttons-header");
+    parentEl.appendChild(overlayButtons);
+
+    nameStub = "Exifile.Highlights_" + highlights.title.split(" ").join(".");
+    obj = createTextFile(highlights);
+    textFile = obj.textFile;
+    jsonFile = JSON.stringify(highlights);
+
+    addDownloadButton({
+      parentEl: overlayButtons,
+      stub: nameStub,
+      file: jsonFile,
+      type: "JSON"
+    });
+    addDownloadButton({
+      parentEl: overlayButtons,
+      stub: nameStub,
+      file: textFile,
+      type: "Text"
+    });
+
+    // TODO add subscribe here
+
+    return null;
+  };
+
+  const addDownloadButton = ({ parentEl, stub, file, type }) => {
+    downloadButton = document.createElement("button");
+    downloadButton.setAttribute("class", "download-button");
+    downloadButton.innerHTML = `Download ${type}`;
+    downloadButton.onclick = () => download(`${stub}.${type}`, file);
+    parentEl.appendChild(downloadButton);
+    return null;
+  };
+
+  const addCloseButton = parentEl => {
+    closeButton = document.createElement("button");
+    closeButton.setAttribute("class", "close-button");
+    closeButton.innerHTML = "X";
+    closeButton.onclick = () => closeAll(parentEl);
+    parentEl.appendChild(closeButton);
+    return null;
+  };
+
+  const addFooter = parentEl => {
+    footer = document.createElement("div");
+    footer.setAttribute("class", "exifile-footer");
+    footer.innerHTML =
+      "<p><a href='https://oddumbrella.com/exifile/Exifile' target='_blank' rel='noopener noreferrer'>Exifile</a> by Suprada | Free your Scribd highlights</p>";
+    parentEl.appendChild(footer);
+    return null;
+  };
+
+  function createTextFile(highlights) {
+    // console.log("highlights", highlights);
+    const { title, authors, isbn, annotations } = highlights;
+    textFile = "";
+    displayText = "";
+    // From quotes object
+    displayText += '<ol class="all-quotes">';
+    textFile += "TITLE: " + title + "\n";
+    textFile += "AUTHORS: " + authors.join(", ") + "\n";
+    textFile += "ISBN: " + isbn + "\n";
+
+    annotations.forEach(item => {
+      textFile += "\n";
+      displayText += '<li class="quote-style">';
+      if (item.type === "highlight") {
+        displayText += '<span class="text">' + item.excerpt + "</span>";
+        textFile += item.excerpt + "\n";
+      } else if (item.type === "note") {
+        textFile += "NOTE: " + item.excerpt + "\n";
+        displayText +=
+          '<br><span class="note">Note: ' + item.excerpt + "</span>";
+      }
+      textFile += "LOCATION: " + item.location + "\n";
+      displayText +=
+        '<br><span class="page-number">' + item.location + "</span>";
+      displayText += "</li>";
+    });
+    displayText += "</ol>";
+    return { textFile: textFile, displayText: displayText };
+  }
+
+  function scrollDownPage() {
+    // console.log("in scrollDownPage");
+    var buttonsContainer = document.getElementsByClassName("buttons_container");
+    buttonsContainer[0].scrollIntoView();
+  }
+
+  download = function download(filename, text) {
+    // console.log("in download");
+    var element = document.createElement("a");
+    element.setAttribute(
+      "href",
+      "data:text/plain;charset=utf-8," + encodeURIComponent(text)
+    );
+    element.setAttribute("download", filename);
+
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
+  // DOM helpers
+  closeAll = function(elem) {
+    console.log("in closeAll");
+    document.body.removeChild(elem);
+  };
+
+  // helpers
+  async function delayTimer(f, n) {
+    await timeout(n);
+    return f();
+  }
+
+  function timeout(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+})();

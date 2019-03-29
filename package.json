@@ -1,0 +1,25 @@
+{
+  "name": "exifile",
+  "version": "1.0.0",
+  "description": "",
+  "main": "exifile-test.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "./node_modules/.bin/http-server --ssl -c-1 -p 8080 -a 127.0.0.1 -o"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Suprada/Exifile.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Suprada/Exifile/issues"
+  },
+  "homepage": "https://github.com/Suprada/Exifile#readme",
+  "dependencies": {
+    "eslint": "^5.13.0",
+    "http-server": "^0.10.0",
+    "prettier": "^1.16.4"
+  }
+}
