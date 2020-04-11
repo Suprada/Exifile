@@ -12,7 +12,11 @@ const { initExifile } = require("./initExifile");
 const { waitByElementId, waitByElemClass } = require("./util");
 import "./exifile.css";
 
+
 exifile = (async function() {
+
+  const buildTime = process.env.buildTime;
+
   const metadat = {
     name: "exifile",
     version: "2.0",
@@ -36,6 +40,6 @@ exifile = (async function() {
   let bookHighlights = {};
   let anns = [];
 
-  await makeOverlayAndSetMessage(e, hostName, readPath);
-  initExifile();
+  await makeOverlayAndSetMessage(e, hostName, readPath, buildTime);
+  initExifile(e);
 })();

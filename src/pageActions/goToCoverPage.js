@@ -24,6 +24,7 @@ export const goToCoverPage = () => {
       "visually_hidden chapter_title_heading"
     )[0].innerText;
     await waitForChapterToLoad(chapterHeading);
+    console.log('end of go to cover page');
     
     resolve(chapterNames);
   });

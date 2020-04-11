@@ -14,7 +14,7 @@ export const startScrapingPage = async () => {
 
   highlights.annotations = await getNotesAndBookmarks();
   updateOverlayMessage(
-    `Found ${highlights.annotations.length} annotations in ${highlights.title}`
+    `<p>Found ${highlights.annotations.length} annotations in ${highlights.title}</p>`
   );
   console.log(
     `Found ${highlights.annotations.length} annotations in ${highlights.title}`

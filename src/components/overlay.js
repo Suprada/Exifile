@@ -1,22 +1,18 @@
 import { addCloseButton } from "./buttons";
 
-const UPDATED_DATE = "April 11, 2020";
 const h1Message = `Exifiling...`;
 const h1Elem = `<h1 id="exifile-h1">${h1Message}</h1>`;
 const h3Message = `Takes about 5 mins-ish. Time for a cup of coffee...`;
 const h3Elem = `<h3 id='exifile-h3'>${h3Message}</h3>`;
 const message1 = `Starting Exifiling.`;
 const progressElem = `<p id='exifile-progress'>${message1}</p>`;
-
 const pollingMessage = ``;
 const pollingElem = `<span id='exifile-polling'>${pollingMessage}</span>`;
 const pollingSpan = `<span id='polling'></span>`;
 
-const updatedOnMessage = `Exifile updated on ${UPDATED_DATE}`;
-const updatedElem = `<p class='updatedOn'>${updatedOnMessage}</p>`;
-
-export const makeOverlayAndSetMessage = (e, hostName, readPath) => {
+export const makeOverlayAndSetMessage = (e, hostName, readPath, buildTime) => {
   return new Promise(resolve => {
+    const updatedElem = `<p class='updatedOn'>Updated On: ${buildTime}</p>`;
     e.setAttribute("class", "overlay-info");
     document.body.appendChild(e);
     if (hostName !== "www.scribd.com") {
@@ -28,7 +24,7 @@ export const makeOverlayAndSetMessage = (e, hostName, readPath) => {
       addCloseButton(e);
       resolve();
     } else if (hostName === "www.scribd.com" && readPath === "read") {
-      e.innerHTML = `${h1Elem}${h3Elem}${progressElem}<p>${pollingElem} ${pollingSpan}</p>${updatedElem}`;
+      e.innerHTML = `${h1Elem}${h3Elem}${progressElem}<p class="exifile-status">${pollingElem} ${pollingSpan}</p>${updatedElem}`;
       resolve();
     }
   });

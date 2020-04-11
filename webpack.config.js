@@ -6,9 +6,13 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const HtmlWebpackPartialsPlugin = require("html-webpack-partials-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const webpack = require('webpack');
 
 let mode = "development";
-let hostPath = "https://127.0.0.1:9000";
+let hostPath = "https://localhost:9000";
+const options = {  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+const buildTime = new Date().toLocaleDateString('us-EN', options);
+
 
 if (process.env.NODE_ENV !== "development") {
   mode = "production";
@@ -53,7 +57,8 @@ const plugins = [
     // Options similar to the same options in webpackOptions.output
     // both options are optional
     filename: "exifile.css"
-  })
+  }),
+  new webpack.EnvironmentPlugin({NODE_ENV: 'development', buildTime: buildTime})
 ];
 
 const optimization = {
@@ -75,14 +80,16 @@ const optimization = {
 };
 
 const devServer = {
-  contentBase: path.join(__dirname, "dist"),
+  contentBase: path.join(__dirname, "static"),
+  filename: "exifile.js",
   compress: false,
   port: 9000,
   https: true,
   key: fs.readFileSync("./localhost.key"),
   cert: fs.readFileSync("./localhost.crt"),
   ca: fs.readFileSync("./localhost.pem"),
-  hot: true
+  hot: true,
+  historyApiFallback: true,
 };
 
 module.exports = {
