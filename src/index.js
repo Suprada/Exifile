@@ -10,6 +10,7 @@
 const { makeOverlayAndSetMessage } = require("./components/overlay");
 const { initExifile } = require("./initExifile");
 const { waitByElementId, waitByElemClass } = require("./util");
+import "./exifile.css";
 
 exifile = (async function() {
   const metadat = {
@@ -21,10 +22,10 @@ exifile = (async function() {
     keywords: ["scribd", "note", "highlight"],
     author: "Suprada Urval <suprada@oddumbrella.com> (https://oddumbrella.com)",
     bugs: {
-      email: "suprada@oddumbrella.com",
+      email: "suprada@oddumbrella.com"
     },
     homepage: "https://oddumbrella.com/exifile",
-    license: "MIT",
+    license: "MIT"
   };
 
   // TODO add analytics tracker

@@ -1,5 +1,6 @@
 import { addCloseButton } from "./buttons";
 
+const UPDATED_DATE = "April 11, 2020";
 const h1Message = `Exifiling...`;
 const h1Elem = `<h1 id="exifile-h1">${h1Message}</h1>`;
 const h3Message = `Takes about 5 mins-ish. Time for a cup of coffee...`;
@@ -11,11 +12,11 @@ const pollingMessage = ``;
 const pollingElem = `<span id='exifile-polling'>${pollingMessage}</span>`;
 const pollingSpan = `<span id='polling'></span>`;
 
-const updatedOnMessage = `Exifile updated on ${new Date().toDateString()}`;
+const updatedOnMessage = `Exifile updated on ${UPDATED_DATE}`;
 const updatedElem = `<p class='updatedOn'>${updatedOnMessage}</p>`;
 
 export const makeOverlayAndSetMessage = (e, hostName, readPath) => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     e.setAttribute("class", "overlay-info");
     document.body.appendChild(e);
     if (hostName !== "www.scribd.com") {
@@ -33,16 +34,16 @@ export const makeOverlayAndSetMessage = (e, hostName, readPath) => {
   });
 };
 
-export const updateOverlayMessage = (msg) => {
-  return new Promise((resolve) => {
+export const updateOverlayMessage = msg => {
+  return new Promise(resolve => {
     const overlayInfo = document.getElementById("exifile-progress");
     const currentMsg = overlayInfo.innerText;
     overlayInfo.innerHTML = `${currentMsg} ${msg}`;
   });
 };
 
-export const updatePollingCounter = (msg) => {
-  return new Promise((resolve) => {
+export const updatePollingCounter = msg => {
+  return new Promise(resolve => {
     const pollingCntr = document.getElementById("exifile-polling");
     pollingCntr.innerHTML = msg;
     resolve();
@@ -70,7 +71,7 @@ export const addOverlayHeader = ({ parentEl, highlights }) => {
   return null;
 };
 
-export const addFooter = (parentEl) => {
+export const addFooter = parentEl => {
   const footer = document.createElement("div");
   footer.setAttribute("class", "exifile-footer");
   footer.innerHTML =
