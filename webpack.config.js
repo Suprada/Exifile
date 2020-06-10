@@ -6,13 +6,17 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const HtmlWebpackPartialsPlugin = require("html-webpack-partials-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
-const webpack = require('webpack');
+const webpack = require("webpack");
 
 let mode = "development";
 let hostPath = "https://localhost:9000";
-const options = {  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-const buildTime = new Date().toLocaleDateString('us-EN', options);
-
+const options = {
+  weekday: "long",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+};
+const buildTime = new Date().toLocaleDateString("us-EN", options);
 
 if (process.env.NODE_ENV !== "development") {
   mode = "production";
@@ -25,40 +29,43 @@ const plugins = [
   new CopyPlugin([
     {
       from: path.join(__dirname, "./static/"),
-      to: path.join(__dirname, "./dist/")
-    }
+      to: path.join(__dirname, "./dist/"),
+    },
   ]),
   new HtmlWebpackPlugin({
-    template: path.join(__dirname, "./src/html/template.html")
+    template: path.join(__dirname, "./src/html/template.html"),
   }),
   new HtmlWebpackPartialsPlugin([
     {
       path: path.join(__dirname, "./src/html/_styles.html"),
-      location: "head"
+      location: "head",
     },
     {
       path: path.join(__dirname, "./src/html/_analytics.html"),
-      location: "head"
+      location: "head",
     },
     {
       path: path.join(__dirname, "./src/html/_column2.html"),
       location: "section",
       options: {
-        JSPath
-      }
+        JSPath,
+      },
     },
     {
       path: path.join(__dirname, "./src/html/_test.html"),
       location: `div`,
-      inject: mode === "development"
-    }
+      inject: mode === "development",
+    },
   ]),
   new MiniCssExtractPlugin({
     // Options similar to the same options in webpackOptions.output
     // both options are optional
-    filename: "exifile.css"
+    filename: "exifile.css",
   }),
-  new webpack.EnvironmentPlugin({NODE_ENV: 'development', buildTime: buildTime})
+  new webpack.EnvironmentPlugin({
+    NODE_ENV: "development",
+    buildTime: buildTime,
+  }),
 ];
 
 const optimization = {
@@ -66,17 +73,17 @@ const optimization = {
   minimizer: [
     new TerserPlugin({
       sourceMap: mode === "development" ? true : false,
-      test: /\.js(\?.*)?$/i
+      test: /\.js(\?.*)?$/i,
     }),
     new OptimizeCssAssetsPlugin({
       filename: "exifile.css",
       cssProcessor: require("cssnano"),
       cssProcessorPluginOptions: {
-        preset: ["default", { discardComments: { removeAll: true } }]
+        preset: ["default", { discardComments: { removeAll: true } }],
       },
-      canPrint: true
-    })
-  ]
+      canPrint: true,
+    }),
+  ],
 };
 
 const devServer = {
@@ -97,7 +104,7 @@ module.exports = {
   entry: "./src/index.js",
   output: {
     filename: "exifile.js",
-    path: path.resolve(__dirname, "dist")
+    path: path.resolve(__dirname, "dist"),
   },
   optimization,
   plugins,
@@ -108,9 +115,9 @@ module.exports = {
         test: /\.(png|jpe?g|gif)$/i,
         use: [
           {
-            loader: "file-loader"
-          }
-        ]
+            loader: "file-loader",
+          },
+        ],
       },
       {
         test: /\.css$/i,
@@ -118,12 +125,12 @@ module.exports = {
           {
             loader: MiniCssExtractPlugin.loader,
             options: {
-              publicPath: "/dist/"
-            }
+              publicPath: "/dist/",
+            },
           },
-          "css-loader"
-        ]
-      }
-    ]
-  }
+          "css-loader",
+        ],
+      },
+    ],
+  },
 };

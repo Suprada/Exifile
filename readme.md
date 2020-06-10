@@ -3,6 +3,13 @@
 3. Drag the bookmark
 4. Run exifile while one page is still open at localhost:9000
 
+To deploy
+
+1. Run npm run build
+2. The production files live in the dist folder
+3. In the index.html file remove the script tag with exifile.js
+4. Copy to folder on server
+
 <!-- For local testing and development
 
 1. Launch the local http server
