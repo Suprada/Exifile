@@ -29,10 +29,10 @@ export const initExifile = async (e) => {
     document,
     "script",
     "//www.google-analytics.com/analytics.js",
-    "ga"
+    "gau"
   );
-  ga("create", "UA-74303935-1", "auto");
-  ga("send", "pageview");
+  gau("create", "UA-74303935-1", "auto");
+  gau("send", "pageview");
   // end google analytics
 
   const verticalScrolling =

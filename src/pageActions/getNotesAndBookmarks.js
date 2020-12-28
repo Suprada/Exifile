@@ -22,7 +22,8 @@ export const getNotesAndBookmarks = async () => {
         excerpt &&
         excerpt !== "" &&
         excerpt !== "No preview available" &&
-        type === "highlight"
+        type &&
+        (type === "highlight" || type === "note")
       ) {
         annotations.push({
           location: location,

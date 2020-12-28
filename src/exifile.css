@@ -90,7 +90,7 @@
 }
 .close-button {
   position: absolute;
-  top: 10px;
+  top: 60px;
   right: 10px;
   padding: 10px;
   color: #000;
@@ -129,9 +129,9 @@
   margin-bottom: 0px;
   padding-bottom: 0px;
 }
-.exifile-status{
+.exifile-status {
   text-align: left;
-  width: 50vw;  
+  width: 50vw;
 }
 #polling {
   color: rebeccapurple;
@@ -139,7 +139,7 @@
 #exifile-polling {
   color: rebeccapurple;
 }
-.info-list{
+.info-list {
   text-align: left;
   margin-bottom: 25px;
 }

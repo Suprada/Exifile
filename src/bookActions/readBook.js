@@ -43,5 +43,6 @@ export const readBook = async (highlights, lastPage, chapterNames) => {
       quitLoop = true;
     }
   }
+  console.log("highlightsObj is", highlightsObj);
   return highlightsObj;
 };
