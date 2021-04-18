@@ -2,7 +2,7 @@ export const bookmarklet = mode => {
   let hostPath = "https://127.0.0.1:8080/";
   if (mode === "production") {
     hostPath =
-      "https://secure27.webhostinghub.com/~suprad5/oddumbrella/exifile/latest/";
+      "https://secure27.webhostinghub.com/~suprad5/suprada/exifile/latest/";
   }
 
   const formFunction = hostPath => {

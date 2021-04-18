@@ -71,7 +71,7 @@ export const addFooter = parentEl => {
   const footer = document.createElement("div");
   footer.setAttribute("class", "exifile-footer");
   footer.innerHTML =
-    "<p><a href='https://oddumbrella.com/exifile/Exifile' target='_blank' rel='noopener noreferrer'>Exifile</a> by Suprada | Free your Scribd highlights</p>";
+    "<p><a href='https://suprada.com/exifile/Exifile' target='_blank' rel='noopener noreferrer'>Exifile</a> by Suprada | Free your Scribd highlights</p>";
   parentEl.appendChild(footer);
   return null;
 };

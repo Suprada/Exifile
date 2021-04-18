@@ -20,7 +20,7 @@ const buildTime = new Date().toLocaleDateString("us-EN", options);
 
 if (process.env.NODE_ENV !== "development") {
   mode = "production";
-  hostPath = "https://secure27.webhostinghub.com/~suprad5/oddumbrella/exifile";
+  hostPath = "https://secure27.webhostinghub.com/~suprad5/suprada/exifile";
 }
 
 const JSPath = `'javascript:void function(){(function(e){var t=document.createElement("link");t.rel="stylesheet",t.type="text/css",t.href="${hostPath}/exifile.css",document.body.appendChild(t);var s=document.createElement("script");s.setAttribute("src",e),document.body.appendChild(s)})("${hostPath}/exifile.js")}();'`;
